@@ -1,6 +1,6 @@
 # TMS — Task Manager (Client + Server)
 
-## Monorepo with:
+## Monorepo
 
 - Client: [client](client) (React + Vite + Tailwind)
 - Server: [server](server) (NestJS + Prisma + PostgreSQL/Supabase)
