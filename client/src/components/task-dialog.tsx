@@ -1,10 +1,33 @@
-import { Plus, X } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import type { TaskFormValues } from "../types/task";
+import type { Task, TaskFormValues } from "../types/task";
+import toast from "react-hot-toast";
+import { useTasks } from "../hook/task-context";
 
-export const TaskDialog = () => {
-  const [open, setOpen] = useState(false);
+type TaskDialogProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  initialTask?: Task;
+  showTrigger?: boolean;
+};
+
+export const TaskDialog = ({
+  open: openProp,
+  onOpenChange,
+  initialTask,
+  showTrigger = true,
+}: TaskDialogProps) => {
+  const { addTask, updateTask } = useTasks();
+  const isEdit = !!initialTask;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpenSafe = (v: boolean) => {
+    if (onOpenChange) onOpenChange(v);
+    else setInternalOpen(v);
+  };
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
@@ -12,39 +35,68 @@ export const TaskDialog = () => {
     reset,
     formState: { errors },
   } = useForm<TaskFormValues>({
-    defaultValues: {
-      status: "Todo",
-      priority: "Medium",
-    },
+    defaultValues: initialTask
+      ? {
+          title: initialTask.title,
+          description: initialTask.description ?? "",
+          status: initialTask.status,
+          priority: initialTask.priority,
+        }
+      : {
+          status: "Todo",
+          priority: "Medium",
+        },
   });
 
-  const onSubmit = (data: TaskFormValues) => {
-    const newTask = {
-      id: crypto.randomUUID(),
-      ...data,
-      createdAt: new Date().toISOString(),
-    };
+  useEffect(() => {
+    if (initialTask) {
+      reset({
+        title: initialTask.title,
+        description: initialTask.description ?? "",
+        status: initialTask.status,
+        priority: initialTask.priority,
+      });
+    }
+  }, [initialTask, reset]);
 
-    console.log(newTask);
+  const onSubmit = async (data: TaskFormValues) => {
+    try {
+      setIsLoading(true);
 
-    reset();
-    setOpen(false);
+      if (isEdit) {
+        await updateTask(initialTask!.id, data);
+        toast.success("Task updated successfully");
+      } else {
+        await addTask(data);
+        toast.success("Task created successfully");
+      }
+
+      reset();
+      setOpenSafe(false);
+    } catch (error) {
+      console.error(error);
+      toast.error(isEdit ? "Failed to update task" : "Failed to create task");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="bg-primary text-muted px-2 py-1.5 rounded flex items-center gap-2"
-      >
-        <Plus size={18} />
-        Create Task
-      </button>
+      {showTrigger && (
+        <button
+          onClick={() => setOpenSafe(true)}
+          className="bg-primary text-muted px-2 py-1.5 rounded flex items-center gap-2"
+        >
+          <Plus size={18} />
+          Create Task
+        </button>
+      )}
 
       {open && (
         <div
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 bg-black/20 flex items-center justify-center"
+          onClick={() => setOpenSafe(false)}
+          className="fixed inset-0 bg-black/20 flex items-center justify-center p-4 sm:p-2 z-10"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -52,16 +104,22 @@ export const TaskDialog = () => {
           >
             <div className="flex justify-between mb-4">
               <div>
-                <h2 className="text-xl font-medium">Add New Task</h2>
+                <h2 className="text-xl font-medium">
+                  {isEdit ? "Edit Task" : "Add New Task"}
+                </h2>
                 <p className="text-muted-foreground">
-                  Please fill in the details below to create a new task.
+                  {isEdit
+                    ? "Update the fields below to modify this task."
+                    : "Please fill in the details below to create a new task."}
                 </p>
               </div>
-              <X className="cursor-pointer" onClick={() => setOpen(false)} />
+              <X
+                className="cursor-pointer"
+                onClick={() => setOpenSafe(false)}
+              />
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Title */}
               <div>
                 <label className="block mb-1">Title</label>
                 <input
@@ -81,7 +139,6 @@ export const TaskDialog = () => {
                 )}
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block mb-1">Description</label>
                 <textarea
@@ -100,7 +157,6 @@ export const TaskDialog = () => {
                 )}
               </div>
 
-              {/* Status & Priority */}
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block mb-1">Status</label>
@@ -131,16 +187,20 @@ export const TaskDialog = () => {
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
-                  className="px-4 py-2 bg-gray-200 rounded"
+                  onClick={() => setOpenSafe(false)}
+                  className="cursor-pointer px-4 py-2 bg-gray-200 rounded"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  className="cursor-pointer px-4 py-2 bg-blue-500 text-white rounded flex items-center gap-2 disabled:opacity-50"
+                  disabled={isLoading}
                 >
-                  Create
+                  {isLoading ? (
+                    <Loader2 className="animate-spin size-4" />
+                  ) : null}
+                  {isEdit ? "Update Task" : "Create Task"}
                 </button>
               </div>
             </form>
