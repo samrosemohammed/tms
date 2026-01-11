@@ -1,4 +1,6 @@
-# TMS — Task Manager (Client + Server)
+# Task Manager (Client + Server)
+
+[![Demo](https://img.shields.io/badge/Demo-View-blue)](https://github.com/user-attachments/assets/d155d7a8-5a18-4c1e-b434-d311bf87385f)
 
 ## Monorepo
 
