@@ -3,12 +3,12 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { Task, TaskFormValues } from "../types/task";
 import toast from "react-hot-toast";
+import { useTasks } from "../hook/task-context";
 
 type TaskDialogProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   initialTask?: Task;
-  onSaved?: (task: Task) => void;
   showTrigger?: boolean;
 };
 
@@ -16,9 +16,9 @@ export const TaskDialog = ({
   open: openProp,
   onOpenChange,
   initialTask,
-  onSaved,
   showTrigger = true,
 }: TaskDialogProps) => {
+  const { addTask, updateTask } = useTasks();
   const isEdit = !!initialTask;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
@@ -63,34 +63,20 @@ export const TaskDialog = ({
     try {
       setIsLoading(true);
 
-      const url = isEdit
-        ? `http://localhost:3000/tasks/${initialTask!.id}`
-        : "http://localhost:3000/tasks";
-      const method = isEdit ? "PATCH" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok)
-        throw new Error(
-          isEdit ? "Failed to update task" : "Failed to create task"
-        );
-
-      const savedTask = await response.json();
-      toast.success(
-        isEdit ? "Task updated successfully" : "Task created successfully"
-      );
-      onSaved?.(savedTask);
+      if (isEdit) {
+        await updateTask(initialTask!.id, data);
+        toast.success("Task updated successfully");
+      } else {
+        await addTask(data);
+        toast.success("Task created successfully");
+      }
 
       reset();
-      setIsLoading(false);
       setOpenSafe(false);
     } catch (error) {
-      console.error("Error saving task:", error);
+      console.error(error);
       toast.error(isEdit ? "Failed to update task" : "Failed to create task");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -110,7 +96,7 @@ export const TaskDialog = ({
       {open && (
         <div
           onClick={() => setOpenSafe(false)}
-          className="fixed inset-0 bg-black/20 flex items-center justify-center"
+          className="fixed inset-0 bg-black/20 flex items-center justify-center p-4 sm:p-2 z-10"
         >
           <div
             onClick={(e) => e.stopPropagation()}
