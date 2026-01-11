@@ -1,10 +1,12 @@
-import { Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { TaskFormValues } from "../types/task";
+import toast from "react-hot-toast";
 
 export const TaskDialog = () => {
   const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
@@ -18,17 +20,29 @@ export const TaskDialog = () => {
     },
   });
 
-  const onSubmit = (data: TaskFormValues) => {
-    const newTask = {
-      id: crypto.randomUUID(),
-      ...data,
-      createdAt: new Date().toISOString(),
-    };
+  const onSubmit = async (data: TaskFormValues) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("http://localhost:3000/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-    console.log(newTask);
+      if (!response.ok) throw new Error("Failed to create task");
 
-    reset();
-    setOpen(false);
+      const newTask = await response.json();
+      toast.success("Task created successfully");
+      console.log("Task created:", newTask);
+
+      reset();
+      setIsLoading(false);
+      setOpen(false);
+    } catch (error) {
+      console.error("Error creating task:", error);
+    }
   };
 
   return (
@@ -138,9 +152,13 @@ export const TaskDialog = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  className="px-4 py-2 bg-blue-500 text-white rounded flex items-center gap-2 disabled:opacity-50"
+                  disabled={isLoading}
                 >
-                  Create
+                  {isLoading ? (
+                    <Loader2 className="animate-spin size-4" />
+                  ) : null}
+                  Create Task
                 </button>
               </div>
             </form>

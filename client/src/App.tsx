@@ -1,8 +1,11 @@
+import { Toaster } from "react-hot-toast";
 import { TaskDialog } from "./components/task-dialog";
+import { TaskList } from "./components/task-list";
 
 function App() {
   return (
     <>
+      <Toaster position="top-right" />
       <div className="container mx-auto max-w-screen-7xl p-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -14,6 +17,7 @@ function App() {
           </div>
           <TaskDialog />
         </div>
+        <TaskList />
       </div>
     </>
   );
