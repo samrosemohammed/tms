@@ -5,8 +5,8 @@ import { TaskList } from "./components/task-list";
 function App() {
   return (
     <>
-      <Toaster position="top-right" />
-      <div className="container mx-auto max-w-screen-7xl p-4">
+      <Toaster position="top-center" />
+      <div className="container mx-auto max-w-screen-7xl p-4 min-h-screen">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
